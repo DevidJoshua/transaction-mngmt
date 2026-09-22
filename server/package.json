@@ -2,7 +2,7 @@
   "name": "plink5-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Prismalink multi-tenant platform API",
+  "description": "Prismalink multi-partner platform API",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",

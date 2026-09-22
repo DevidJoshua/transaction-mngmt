@@ -5,7 +5,7 @@ import { AuditService } from '../audit/audit.service'
 
 // Default role privilege templates (intersected with package entitlement at provisioning)
 const ROLE_TEMPLATES: Record<string, string[] | null> = {
-  Admin: null, // all package-entitled privileges
+  Admin: ['USER_VIEW', 'USER_MANAGE', 'ROLE_VIEW', 'ROLE_MANAGE'],
   Operational: [
     'DASHBOARD_VIEW',
     'TRANSACTION_VIEW',
@@ -36,7 +36,7 @@ export class CatalogService {
   ) {}
 
   async getCatalog() {
-    const [modules, packages, tenants] = await Promise.all([
+    const [modules, packages, partners] = await Promise.all([
       this.prisma.module.findMany({
         include: { privileges: { include: { feature: true } }, versions: { orderBy: { releasedAt: 'asc' } } },
         orderBy: { label: 'asc' },
@@ -47,7 +47,7 @@ export class CatalogService {
           moduleVersions: { include: { module: { select: { id: true } }, version: { select: { version: true } } } },
         },
       }),
-      this.prisma.tenant.findMany({
+      this.prisma.partner.findMany({
         include: {
           package: { select: { name: true } },
           moduleVersions: { include: { module: { select: { id: true } }, version: { select: { version: true } } } },
@@ -88,7 +88,7 @@ export class CatalogService {
           version: mv.version.version,
         })),
       })),
-      tenants: tenants.map((t) => ({
+      partners: partners.map((t) => ({
         id: t.id,
         name: t.name,
         type: t.type,
@@ -103,7 +103,7 @@ export class CatalogService {
     }
   }
 
-  async createTenant(
+  async createPartner(
     dto: {
       name: string
       type: string
@@ -136,11 +136,11 @@ export class CatalogService {
 
     const password = await bcrypt.hash('password123', 10)
     const slug = dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const tenantId = `${slug || 'tenant'}-${Date.now()}`
+    const partnerId = `${slug || 'partner'}-${Date.now()}`
 
     return this.prisma.$transaction(async (tx) => {
-      const tenant = await tx.tenant.create({
-        data: { id: tenantId, name: dto.name, type: dto.type, packageId: dto.packageId },
+      const partner = await tx.partner.create({
+        data: { id: partnerId, name: dto.name, type: dto.type, packageId: dto.packageId },
       })
 
       for (const moduleId of packageModuleIds) {
@@ -150,8 +150,8 @@ export class CatalogService {
           versionId = latest?.id
         }
         if (!versionId) continue
-        await tx.tenantModuleVersion.create({
-          data: { tenantId, moduleId, versionId },
+        await tx.partnerModuleVersion.create({
+          data: { partnerId, moduleId, versionId },
         })
       }
 
@@ -160,8 +160,8 @@ export class CatalogService {
         const privilegeIds = template === null ? packagePrivileges : packagePrivileges.filter((p) => template.includes(p))
         const role = await tx.role.create({
           data: {
-            id: `${tenantId}-${roleName.toLowerCase()}`,
-            tenantId,
+            id: `${partnerId}-${roleName.toLowerCase()}`,
+            partnerId,
             name: roleName,
             rolePrivileges: { create: privilegeIds.map((privilegeId) => ({ privilegeId })) },
           },
@@ -172,8 +172,8 @@ export class CatalogService {
 
       const admin = await tx.user.create({
         data: {
-          id: `${tenantId}-admin`,
-          tenantId,
+          id: `${partnerId}-admin`,
+          partnerId,
           name: dto.adminName,
           email: dto.adminEmail.trim().toLowerCase(),
           password,
@@ -182,15 +182,15 @@ export class CatalogService {
       })
 
       return {
-        id: tenant.id,
-        name: tenant.name,
-        type: tenant.type,
-        packageId: tenant.packageId,
+        id: partner.id,
+        name: partner.name,
+        type: partner.type,
+        packageId: partner.packageId,
         roles: Object.keys(roles),
         admin: { id: admin.id, email: admin.email, name: admin.name },
       }
     }).then(async (result) => {
-      await this.audit.log({ actor, action: 'TENANT_CREATED', tenantId: result.id, target: result.name })
+      await this.audit.log({ actor, action: 'PARTNER_CREATED', partnerId: result.id, target: result.name })
       return result
     })
   }
@@ -268,5 +268,41 @@ export class CatalogService {
     })
     await this.audit.log({ actor, action: 'MODULE_VERSION_CREATED', target: `${mod.label} ${version}` })
     return created
+  }
+
+  async createModule(dto: { label: string; route: string; icon: string }, actor: string) {
+    const slug = dto.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    const id = slug || 'module'
+    const existing = await this.prisma.module.findUnique({ where: { id } })
+    if (existing) throw new BadRequestException('Module already exists')
+    const created = await this.prisma.module.create({
+      data: { id, label: dto.label, route: dto.route || `/${id}`, icon: dto.icon || 'Boxes' },
+    })
+    await this.audit.log({ actor, action: 'MODULE_CREATED', target: dto.label })
+    return created
+  }
+
+  async createPrivilege(dto: { moduleId: string; feature: string; label: string }, actor: string) {
+    const mod = await this.prisma.module.findUnique({ where: { id: dto.moduleId } })
+    if (!mod) throw new BadRequestException('Unknown module')
+
+    const privilegeId = dto.label.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/(^_|_$)/g, '')
+    const existingPriv = await this.prisma.privilege.findUnique({ where: { id: privilegeId } })
+    if (existingPriv) throw new BadRequestException('Privilege code already exists')
+
+    return this.prisma.$transaction(async (tx) => {
+      const featureSlug = dto.feature.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      let feature = await tx.feature.findFirst({ where: { moduleId: dto.moduleId, label: dto.feature } })
+      if (!feature) {
+        feature = await tx.feature.create({
+          data: { id: `${dto.moduleId}-${featureSlug}`, moduleId: dto.moduleId, label: dto.feature },
+        })
+      }
+      const privilege = await tx.privilege.create({
+        data: { id: privilegeId, moduleId: dto.moduleId, featureId: feature.id, label: dto.label },
+      })
+      await this.audit.log({ actor, action: 'PRIVILEGE_CREATED', target: privilegeId })
+      return privilege
+    })
   }
 }

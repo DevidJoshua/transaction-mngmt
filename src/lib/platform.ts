@@ -21,7 +21,7 @@ export interface Package {
   entitlements: { modules: string[]; privileges: string[] }
 }
 
-export interface Tenant {
+export interface Partner {
   id: string
   name: string
   type: string
@@ -30,7 +30,7 @@ export interface Tenant {
 
 export interface Role {
   id: string
-  tenantId: string
+  partnerId: string
   name: string
   privileges: string[]
   status: 'active' | 'inactive'
@@ -40,7 +40,7 @@ export type UserStatus = 'invited' | 'active' | 'suspended' | 'deactivated'
 
 export interface UserRec {
   id: string
-  tenantId: string | null
+  partnerId: string | null
   name: string
   email: string
   roleIds: string[]
@@ -51,7 +51,7 @@ export interface UserRec {
 
 export interface Org {
   id: string
-  tenantId: string
+  partnerId: string
   name: string
   parentId?: string
 }
@@ -59,7 +59,7 @@ export interface Org {
 export interface SessionContext {
   user: UserRec
   isVendor: boolean
-  tenant: { id: string; name: string; type: string; packageId: string } | null
+  partner: { id: string; name: string; type: string; packageId: string } | null
   pkg: Package | null
   roles: Role[]
   privileges: string[]

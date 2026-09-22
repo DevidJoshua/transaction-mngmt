@@ -23,10 +23,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password')
     }
     if (user.status !== 'active') {
-      await this.audit.log({ actor: user.email, action: 'LOGIN_FAILED', tenantId: user.tenantId, detail: `status=${user.status}` })
+      await this.audit.log({ actor: user.email, action: 'LOGIN_FAILED', partnerId: user.partnerId, detail: `status=${user.status}` })
       throw new UnauthorizedException('This account is not active')
     }
-    await this.audit.log({ actor: user.email, action: 'LOGIN', tenantId: user.tenantId })
+    await this.audit.log({ actor: user.email, action: 'LOGIN', partnerId: user.partnerId })
     const token = await this.jwt.signAsync({ sub: user.id } satisfies JwtPayload)
     return { token }
   }

@@ -1,4 +1,4 @@
-# Prismalink multi-tenant platform — Docker Swarm deployment
+# Prismalink multi-partner platform — Docker Swarm deployment
 #
 # Build and tag images first (from repo root):
 #   docker build -t plink5-api:latest -f server/Dockerfile server
@@ -40,7 +40,7 @@ services:
         order: stop-first
 
   api:
-    image: plink5-api:latest
+    image: ${IMAGE_REGISTRY:-}plink5-api:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       DB_HOST: db
@@ -61,7 +61,7 @@ services:
           memory: 512M
 
   web:
-    image: plink5-web:latest
+    image: ${IMAGE_REGISTRY:-}plink5-web:${IMAGE_TAG:-latest}
     ports:
       - "80:80"
     networks:

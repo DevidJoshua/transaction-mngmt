@@ -1,12 +1,12 @@
 # APPLICATION
 
-# Configurable Multi-Tenant Modular Business Platform
+# Configurable Multi-Partner Modular Business Platform
 
 ## 1. Application Overview
 
 ### 1.1 Purpose
 
-Application ini adalah **configurable multi-tenant modular business platform** yang memungkinkan satu platform digunakan oleh berbagai tipe client dengan kebutuhan bisnis, struktur organisasi, fitur, user, role, dan permission yang berbeda.
+Application ini adalah **configurable multi-partner modular business platform** yang memungkinkan satu platform digunakan oleh berbagai tipe client dengan kebutuhan bisnis, struktur organisasi, fitur, user, role, dan permission yang berbeda.
 
 Platform tidak dibangun sebagai satu aplikasi yang memiliki konfigurasi tetap untuk seluruh client.
 
@@ -21,7 +21,7 @@ Platform
    │
    ├── Packages
    │
-   ├── Tenant
+   ├── Partner
    │     ├── Organization
    │     ├── Users
    │     ├── Roles
@@ -124,7 +124,7 @@ Platform ini mengubah pendekatan tersebut menjadi:
 
 Core application tetap sama.
 
-Yang berbeda adalah konfigurasi dan capability yang diberikan kepada masing-masing tenant.
+Yang berbeda adalah konfigurasi dan capability yang diberikan kepada masing-masing partner.
 
 ---
 
@@ -180,25 +180,25 @@ Module dapat terdiri dari beberapa feature.
 
 ---
 
-## 4.3 Multi-Tenant
+## 4.3 Multi-Partner
 
-Setiap client merupakan tenant yang terisolasi secara logical.
+Setiap client merupakan partner yang terisolasi secara logical.
 
 Contoh:
 
 ```text
 Platform
 │
-├── Tenant: Bank A
+├── Partner: Bank A
 │
-├── Tenant: Bank B
+├── Partner: Bank B
 │
-├── Tenant: Aggregator A
+├── Partner: Aggregator A
 │
-└── Tenant: Merchant A
+└── Partner: Merchant A
 ```
 
-Data tenant tidak boleh dapat diakses oleh tenant lain kecuali secara eksplisit terdapat mekanisme cross-tenant yang memang diizinkan oleh platform.
+Data partner tidak boleh dapat diakses oleh partner lain kecuali secara eksplisit terdapat mekanisme cross-partner yang memang diizinkan oleh platform.
 
 ---
 
@@ -280,7 +280,7 @@ Vendor bertanggung jawab terhadap:
 * feature catalog
 * privilege catalog
 * package
-* tenant provisioning
+* partner provisioning
 * initial client administrator
 * platform-level configuration
 
@@ -290,7 +290,7 @@ Contoh role:
 Platform Super Admin
 Platform Administrator
 Package Administrator
-Tenant Administrator
+Partner Administrator
 Module Administrator
 ```
 
@@ -312,7 +312,7 @@ Client dapat berupa:
 
 Client memiliki administrator sendiri.
 
-Administrator pertama diberikan oleh vendor ketika tenant dibuat.
+Administrator pertama diberikan oleh vendor ketika partner dibuat.
 
 Setelah itu client dapat mengelola user internalnya sendiri.
 
@@ -331,7 +331,7 @@ Pembagian ownership merupakan konsep fundamental aplikasi.
           │           │           │
           └───────────┼───────────┘
                       │
-               CLIENT TENANT
+               CLIENT PARTNER
                       │
              Initial Client Admin
                       │
@@ -351,7 +351,7 @@ Pembagian ownership merupakan konsep fundamental aplikasi.
 * Privilege definition
 * Package definition
 * Package entitlement
-* Tenant provisioning
+* Partner provisioning
 * Initial client administrator
 
 ### Client controls:
@@ -380,7 +380,7 @@ Vendor Platform
       ├── Package
       │     └── Package Entitlements
       │
-      └── Tenant
+      └── Partner
             │
             ├── Organization
             │
@@ -628,7 +628,7 @@ Roles:
 - Report Viewer
 ```
 
-Effective privilege user merupakan gabungan privilege dari role yang dimilikinya, subject to tenant, package, status, dan scope.
+Effective privilege user merupakan gabungan privilege dari role yang dimilikinya, subject to partner, package, status, dan scope.
 
 ---
 
@@ -693,7 +693,7 @@ tetapi hanya untuk transaction yang berada pada Jakarta Branch.
 Scope dapat berupa:
 
 ```text
-Tenant
+Partner
 Organization
 Branch
 Merchant Group
@@ -737,7 +737,7 @@ Privilege
 dengan tambahan:
 
 ```text
-Tenant
+Partner
   ↓
 Package Entitlement
   ↓
@@ -753,7 +753,7 @@ Effective access user dapat digambarkan:
 ```text
 Effective Access
 =
-Tenant Membership
+Partner Membership
 ∩
 Package Entitlement
 ∩
@@ -770,7 +770,7 @@ Contoh:
 User
 John
 
-Tenant:
+Partner:
 Bank A
 
 Package:
@@ -816,7 +816,7 @@ Authentication
 Identify User
    │
    ▼
-Resolve Tenant
+Resolve Partner
    │
    ▼
 Check User Status
@@ -851,7 +851,7 @@ TRANSACTION_VIEW
 System checks:
 
 1. User authenticated?
-2. User belongs to tenant?
+2. User belongs to partner?
 3. User active?
 4. Package contains Transaction?
 5. Role contains TRANSACTION_VIEW?
@@ -904,13 +904,13 @@ Vendor Administration merupakan area pengelolaan platform.
 * Configure package limits
 * Activate/deactivate package
 
-### Tenant Management
+### Partner Management
 
-* Create tenant
+* Create partner
 * Assign package
-* Configure tenant
+* Configure partner
 * Create initial client administrator
-* Suspend/activate tenant
+* Suspend/activate partner
 
 ---
 
@@ -956,14 +956,14 @@ Client administrator dapat:
 
 # 21. Initial Client Administrator
 
-Ketika vendor membuat tenant baru, vendor harus memberikan minimal satu initial client administrator.
+Ketika vendor membuat partner baru, vendor harus memberikan minimal satu initial client administrator.
 
 Contoh:
 
 ```text
 Vendor
    │
-   ├── Create Tenant
+   ├── Create Partner
    │
    ├── Assign Package
    │
@@ -1141,7 +1141,7 @@ Authorization tetap wajib dilakukan di backend.
 
 # 25. Example: Bank Client
 
-## Tenant
+## Partner
 
 ```text
 Bank A
@@ -1171,7 +1171,7 @@ Audit
 ### Bank Admin
 
 ```text
-Full tenant administration
+Full partner administration
 ```
 
 ### Operations
@@ -1215,7 +1215,7 @@ AUDIT_VIEW
 
 # 26. Example: Merchant Aggregator
 
-## Tenant
+## Partner
 
 ```text
 Aggregator A
@@ -1254,7 +1254,7 @@ Auditor
 
 # 27. Example: Merchant
 
-## Tenant
+## Partner
 
 ```text
 Merchant A
@@ -1328,7 +1328,7 @@ Package: Merchant Enterprise
 High-level entity relationship:
 
 ```text
-Tenant
+Partner
  │
  ├── Organization
  │
@@ -1352,7 +1352,7 @@ Vendor Catalog
 Potential entities:
 
 ```text
-Tenant
+Partner
 Organization
 OrganizationUnit
 User
@@ -1374,11 +1374,11 @@ PackagePrivilege
 
 ---
 
-# 30. Tenant Isolation
+# 30. Partner Isolation
 
-Tenant isolation merupakan security requirement utama.
+Partner isolation merupakan security requirement utama.
 
-Setiap request harus dapat menentukan tenant context.
+Setiap request harus dapat menentukan partner context.
 
 Contoh:
 
@@ -1387,22 +1387,22 @@ Request
    │
    └── authenticated user
            │
-           └── tenant_id
+           └── partner_id
 ```
 
-Database query harus selalu mempertimbangkan tenant boundary.
+Database query harus selalu mempertimbangkan partner boundary.
 
 Contoh:
 
 ```sql
 SELECT *
 FROM transactions
-WHERE tenant_id = :currentTenant
+WHERE partner_id = :currentPartner
 ```
 
-Tenant ID tidak boleh hanya dipercaya dari request body atau query parameter.
+Partner ID tidak boleh hanya dipercaya dari request body atau query parameter.
 
-Tenant context harus berasal dari trusted authentication/session context.
+Partner context harus berasal dari trusted authentication/session context.
 
 ---
 
@@ -1412,7 +1412,7 @@ Platform harus menerapkan:
 
 * Authentication
 * Authorization
-* Tenant isolation
+* Partner isolation
 * Role-based access control
 * Scope-based access control
 * Session management
@@ -1461,7 +1461,7 @@ Audit event minimal mencatat:
 
 ```text
 Actor
-Tenant
+Partner
 Action
 Target
 Before
@@ -1534,11 +1534,11 @@ DEPRECATED
 RETIRED
 ```
 
-Package yang sudah digunakan tenant sebaiknya memiliki versioning atau controlled migration mechanism agar perubahan capability tidak menyebabkan akses client berubah secara tidak terkontrol.
+Package yang sudah digunakan partner sebaiknya memiliki versioning atau controlled migration mechanism agar perubahan capability tidak menyebabkan akses client berubah secara tidak terkontrol.
 
 ---
 
-# 36. Tenant Onboarding Flow
+# 36. Partner Onboarding Flow
 
 Recommended flow:
 
@@ -1546,13 +1546,13 @@ Recommended flow:
 Vendor Login
       │
       ▼
-Create Tenant
+Create Partner
       │
       ▼
 Select Package
       │
       ▼
-Configure Tenant
+Configure Partner
       │
       ▼
 Create Initial Client Admin
@@ -1598,7 +1598,7 @@ At runtime:
               Authentication
                     │
                     ▼
-               Tenant Context
+               Partner Context
                     │
           ┌─────────┴─────────┐
           ▼                   ▼
@@ -1640,8 +1640,8 @@ menghasilkan:
 
 ```json
 {
-  "tenant": {
-    "id": "tenant-001",
+  "partner": {
+    "id": "partner-001",
     "name": "Bank A"
   },
   "package": {
@@ -1710,7 +1710,7 @@ Application behavior idealnya berasal dari configuration.
 Contoh:
 
 ```text
-Tenant Configuration
+Partner Configuration
        +
 Package Configuration
        +
@@ -1723,7 +1723,7 @@ Scope Configuration
 Runtime Application
 ```
 
-Dengan demikian application tidak perlu memiliki banyak hard-coded tenant-specific logic.
+Dengan demikian application tidak perlu memiliki banyak hard-coded partner-specific logic.
 
 ---
 
@@ -1792,7 +1792,7 @@ Client-level settings
 
 ```text
 Authentication
-Tenant isolation
+Partner isolation
 Audit
 Security enforcement
 Database integrity
@@ -1847,7 +1847,7 @@ MULTIPLE PACKAGES
 +
 MULTIPLE MODULES
 +
-MULTIPLE TENANTS
+MULTIPLE PARTNERS
 +
 CLIENT-CREATED ROLES
 +
@@ -1873,7 +1873,7 @@ VENDOR
 └── Provisions CLIENT
           │
           ▼
-       TENANT
+       PARTNER
           │
           ├── Organization
           │
@@ -1911,7 +1911,7 @@ Secara keseluruhan:
              │                             │
              └────────── PACKAGE ──────────┘
                             │
-                         TENANT
+                         PARTNER
                             │
                          RUNTIME
                             │
@@ -1930,8 +1930,8 @@ CAN USER PERFORM ACTION?
         │
         ├── Is user authenticated?
         ├── Is user active?
-        ├── Does user belong to tenant?
-        ├── Does tenant have the package capability?
+        ├── Does user belong to partner?
+        ├── Does partner have the package capability?
         ├── Does user's role contain the privilege?
         └── Is requested data inside user's scope?
                     │
@@ -1939,4 +1939,4 @@ CAN USER PERFORM ACTION?
              ALLOW / DENY
 ```
 
-This model should become the foundation for the application's backend architecture, database model, API authorization, frontend navigation, IDM, package management, tenant management, and administrative UI.
+This model should become the foundation for the application's backend architecture, database model, API authorization, frontend navigation, IDM, package management, partner management, and administrative UI.

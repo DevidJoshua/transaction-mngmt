@@ -56,7 +56,7 @@ export const api = {
         entitlements: { modules: string[]; privileges: string[] }
         moduleVersions: { moduleId: string; versionId: string; version: string }[]
       }[]
-      tenants: {
+      partners: {
         id: string
         name: string
         type: string
@@ -67,7 +67,7 @@ export const api = {
       }[]
     }>('/catalog'),
 
-  createTenant: (dto: {
+  createPartner: (dto: {
     name: string
     type: string
     packageId: string
@@ -75,7 +75,7 @@ export const api = {
     adminEmail: string
     moduleVersions?: { moduleId: string; versionId: string }[]
   }) =>
-    request<{ id: string; name: string; roles: string[]; admin: { email: string; name: string } }>('/catalog/tenants', {
+    request<{ id: string; name: string; roles: string[]; admin: { email: string; name: string } }>('/catalog/partners', {
       method: 'POST',
       body: JSON.stringify(dto),
     }),
@@ -91,6 +91,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ version }),
     }),
+
+  createModule: (dto: { label: string; route?: string; icon?: string }) =>
+    request<{ id: string }>('/catalog/modules', { method: 'POST', body: JSON.stringify(dto) }),
+
+  createPrivilege: (dto: { moduleId: string; feature: string; label: string }) =>
+    request<{ id: string }>('/catalog/privileges', { method: 'POST', body: JSON.stringify(dto) }),
 
   users: () => request<import('./platform').UserRec[]>('/admin/users'),
   createUser: (dto: { name: string; email: string }) =>
@@ -118,19 +124,19 @@ export const api = {
     request<import('./platform').Org>('/admin/orgs', { method: 'POST', body: JSON.stringify(dto) }),
 
   merchants: () =>
-    request<{ id: string; tenantId: string; name: string; category: string | null; status: string; createdAt: string }[]>(
+    request<{ id: string; partnerId: string; name: string; category: string | null; status: string; createdAt: string }[]>(
       '/merchants',
     ),
   createMerchant: (dto: { name: string; category?: string }) =>
     request<{ id: string }>('/merchants', { method: 'POST', body: JSON.stringify(dto) }),
 
   settlements: () =>
-    request<{ id: string; tenantId: string; merchant: string; amount: number; status: string; period: string; createdAt: string }[]>(
+    request<{ id: string; partnerId: string; merchant: string; amount: number; status: string; period: string; createdAt: string }[]>(
       '/settlements',
     ),
 
   audit: () =>
-    request<{ id: string; tenantId: string | null; actor: string; action: string; target: string | null; detail: string | null; ip: string | null; createdAt: string }[]>(
+    request<{ id: string; partnerId: string | null; actor: string; action: string; target: string | null; detail: string | null; ip: string | null; createdAt: string }[]>(
       '/audit',
     ),
 }

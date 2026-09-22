@@ -20,7 +20,7 @@ model Module {
   privileges          Privilege[]
   packageEntitlements PackageEntitlement[]
   versions            ModuleVersion[]
-  tenantVersions      TenantModuleVersion[]
+  partnerVersions      PartnerModuleVersion[]
   packageVersions     PackageModuleVersion[]
 }
 
@@ -30,7 +30,7 @@ model ModuleVersion {
   module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   version   String
   releasedAt DateTime @default(now())
-  tenantVersions TenantModuleVersion[]
+  partnerVersions PartnerModuleVersion[]
   packageVersions PackageModuleVersion[]
 
   @@unique([moduleId, version])
@@ -62,7 +62,7 @@ model Package {
   status        String                @default("active")
   entitlements  PackageEntitlement[]
   moduleVersions PackageModuleVersion[]
-  tenants       Tenant[]
+  partners      Partner[]
 }
 
 model PackageModuleVersion {
@@ -91,10 +91,10 @@ model PackageEntitlement {
 }
 
 // ---------------------------------------------------------------------------
-// Tenant domain (client-controlled WHO)
+// Partner domain (client-controlled WHO)
 // ---------------------------------------------------------------------------
 
-model Tenant {
+model Partner {
   id        String         @id
   name      String
   type      String
@@ -106,24 +106,26 @@ model Tenant {
   orgs        Organization[]
   merchants   Merchant[]
   settlements Settlement[]
-  moduleVersions TenantModuleVersion[]
+  moduleVersions PartnerModuleVersion[]
 }
 
 model Organization {
   id         String         @id
-  tenantId   String
-  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  partnerId   String
+  partner     Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   name       String
   parentId   String?
   parent     Organization?  @relation("OrgTree", fields: [parentId], references: [id])
   children   Organization[] @relation("OrgTree")
   userScopes AccessScope[]
+  merchants   Merchant[]
+  settlements Settlement[]
 }
 
 model User {
   id         String        @id
-  tenantId   String?
-  tenant     Tenant?       @relation(fields: [tenantId], references: [id])
+  partnerId   String?
+  partner     Partner?       @relation(fields: [partnerId], references: [id])
   name       String
   email      String        @unique
   password   String
@@ -135,8 +137,8 @@ model User {
 
 model Role {
   id              String          @id
-  tenantId        String
-  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  partnerId        String
+  partner          Partner          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   name            String
   status          String          @default("active")
   rolePrivileges  RolePrivilege[]
@@ -172,28 +174,32 @@ model AccessScope {
 }
 
 // ---------------------------------------------------------------------------
-// Business data (tenant-scoped payments domain)
+// Business data (partner-scoped payments domain)
 // ---------------------------------------------------------------------------
 
 model Merchant {
-  id        String   @id
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String        @id
+  partnerId  String
+  partner    Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   name      String
   category  String?
-  status    String   @default("active")
-  createdAt DateTime @default(now())
+  status    String        @default("active")
+  createdAt DateTime      @default(now())
 }
 
 model Settlement {
-  id        String   @id
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String        @id
+  partnerId  String
+  partner    Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   merchant  String
   amount    Int
   status    String
   period    String
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 }
 
 // ---------------------------------------------------------------------------
@@ -202,7 +208,7 @@ model Settlement {
 
 model AuditLog {
   id        String    @id @default(cuid())
-  tenantId  String?
+  partnerId  String?
   actor     String
   action    String
   target    String?
@@ -212,17 +218,17 @@ model AuditLog {
 }
 
 // ---------------------------------------------------------------------------
-// Module versioning (per-tenant module version assignment)
+// Module versioning (per-partner module version assignment)
 // ---------------------------------------------------------------------------
 
-model TenantModuleVersion {
+model PartnerModuleVersion {
   id        String        @id @default(cuid())
-  tenantId  String
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  partnerId  String
+  partner    Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   moduleId  String
   module    Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   versionId String
   version   ModuleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, moduleId])
+  @@unique([partnerId, moduleId])
 }

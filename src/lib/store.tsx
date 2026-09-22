@@ -45,7 +45,7 @@ export function useCatalog() {
   })
 }
 
-export function useCreateTenant() {
+export function useCreatePartner() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (dto: {
@@ -55,7 +55,7 @@ export function useCreateTenant() {
       adminName: string
       adminEmail: string
       moduleVersions?: { moduleId: string; versionId: string }[]
-    }) => api.createTenant(dto),
+    }) => api.createPartner(dto),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
   })
 }
@@ -65,6 +65,22 @@ export function useCreateModuleVersion() {
   return useMutation({
     mutationFn: ({ moduleId, version }: { moduleId: string; version: string }) =>
       api.createModuleVersion(moduleId, version),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  })
+}
+
+export function useCreateModule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: { label: string; route?: string; icon?: string }) => api.createModule(dto),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  })
+}
+
+export function useCreatePrivilege() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: { moduleId: string; feature: string; label: string }) => api.createPrivilege(dto),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
   })
 }

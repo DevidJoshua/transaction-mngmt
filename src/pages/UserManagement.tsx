@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react'
 import { Plus, Users, ShieldCheck, Building2 } from 'lucide-react'
 import { Card, CardContent, PageHeader, Badge, Button, Input } from '../components/ui'
-import type { Role, UserRec } from '../lib/platform'
+import type { Org, Role, UserRec } from '../lib/platform'
 import {
   useAbility,
   useUsers,
@@ -27,13 +27,13 @@ const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
 export function UserManagement() {
   const [tab, setTab] = useState<Tab>('users')
   const ctx = useAbility()
-  const tenantId = ctx?.tenant?.id
+  const partnerId = ctx?.partner?.id
 
   return (
     <div>
       <PageHeader
         title="User Management"
-        description="Users, roles, and organization structure for your tenant."
+        description="Users, roles, and organization structure for your partner."
       />
 
       <div className="mb-6 flex gap-1 border-b border-border-base">
@@ -54,14 +54,14 @@ export function UserManagement() {
         ))}
       </div>
 
-      {!tenantId ? (
-        <p className="text-sm text-content-secondary">No tenant context.</p>
+      {!partnerId ? (
+        <p className="text-sm text-content-secondary">No partner context.</p>
       ) : tab === 'users' ? (
-        <UsersTab tenantId={tenantId} />
+        <UsersTab partnerId={partnerId} />
       ) : tab === 'roles' ? (
         <RolesTab />
       ) : (
-        <OrgTab tenantId={tenantId} />
+        <OrgTab partnerId={partnerId} />
       )}
     </div>
   )
@@ -71,7 +71,7 @@ function roleName(id: string, roles: Role[]) {
   return roles.find((r) => r.id === id)?.name ?? '—'
 }
 
-function UsersTab({ tenantId }: { tenantId: string }) {
+function UsersTab({ partnerId }: { partnerId: string }) {
   const { data: users = [] } = useUsers()
   const { data: roles = [] } = useRoles()
   const { data: orgs = [] } = useOrgs()
@@ -80,7 +80,7 @@ function UsersTab({ tenantId }: { tenantId: string }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
 
-  const tenantUsers = users.filter((u) => u.tenantId === tenantId && !u.isVendor)
+  const partnerUsers = users.filter((u) => u.partnerId === partnerId && !u.isVendor)
 
   function orgName(id: string) {
     return orgs.find((o) => o.id === id)?.name ?? id
@@ -97,7 +97,7 @@ function UsersTab({ tenantId }: { tenantId: string }) {
             </div>
             <div className="flex-1">
               <label className="mb-1 block text-xs text-content-secondary">Email</label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@tenant.com" />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@partner.com" />
             </div>
             <Button
               disabled={!name || !email || createUser.isPending}
@@ -125,7 +125,7 @@ function UsersTab({ tenantId }: { tenantId: string }) {
               </tr>
             </thead>
             <tbody>
-              {tenantUsers.map((u) => (
+              {partnerUsers.map((u) => (
                 <tr key={u.id} className="border-b border-border-base last:border-0">
                   <td className="px-5 py-3">
                     <p className="font-medium">{u.name}</p>
@@ -141,7 +141,9 @@ function UsersTab({ tenantId }: { tenantId: string }) {
                     <UserStatusControl
                       user={u}
                       roles={roles}
+                      orgs={orgs}
                       onRole={(roleIds) => updateUser.mutate({ id: u.id, patch: { roleIds } })}
+                      onOrg={(orgIds) => updateUser.mutate({ id: u.id, patch: { orgIds } })}
                       onStatus={(status) => updateUser.mutate({ id: u.id, patch: { status } })}
                     />
                   </td>
@@ -158,12 +160,16 @@ function UsersTab({ tenantId }: { tenantId: string }) {
 function UserStatusControl({
   user,
   roles,
+  orgs,
   onRole,
+  onOrg,
   onStatus,
 }: {
   user: UserRec
   roles: Role[]
+  orgs: Org[]
   onRole: (roleIds: string[]) => void
+  onOrg: (orgIds: string[]) => void
   onStatus: (status: UserRec['status']) => void
 }) {
   const statusVariant: Record<string, 'success' | 'error' | 'pending' | 'neutral'> = {
@@ -172,8 +178,16 @@ function UserStatusControl({
     invited: 'pending',
     deactivated: 'neutral',
   }
+  const [orgOpen, setOrgOpen] = useState(false)
+  const partnerOrgs = orgs.filter((o) => o.partnerId === user.partnerId)
+  const orgNames = user.orgIds.map((id) => orgs.find((o) => o.id === id)?.name).filter(Boolean)
+
+  function toggleOrg(id: string) {
+    onOrg(user.orgIds.includes(id) ? user.orgIds.filter((x) => x !== id) : [...user.orgIds, id])
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-end gap-2">
       <Can i="USER_MANAGE">
         <>
           <select
@@ -183,13 +197,47 @@ function UserStatusControl({
           >
             <option value="">No role</option>
             {roles
-              .filter((r) => r.tenantId === user.tenantId)
+              .filter((r) => r.partnerId === user.partnerId)
               .map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                 </option>
               ))}
           </select>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setOrgOpen((v) => !v)}
+              className="h-[22px] max-w-40 truncate rounded-md border border-border-base bg-white px-2 text-xs"
+              title={orgNames.join(', ') || 'Assign organization scope'}
+            >
+              {orgNames.length ? orgNames.join(', ') : 'Assign orgs'}
+            </button>
+            {orgOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setOrgOpen(false)} />
+                <div className="absolute left-0 top-full z-20 mt-1 w-48 rounded-md border border-border-base bg-white p-1 shadow-lg">
+                  {partnerOrgs.map((o) => (
+                    <label
+                      key={o.id}
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-100"
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-surface-primary"
+                        checked={user.orgIds.includes(o.id)}
+                        onChange={() => toggleOrg(o.id)}
+                      />
+                      {o.name}
+                    </label>
+                  ))}
+                  {partnerOrgs.length === 0 && (
+                    <p className="px-2 py-1 text-xs text-content-secondary">No orgs yet.</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
           <select
             className="rounded-md border border-border-base bg-white px-2 py-1 text-xs"
             value={user.status}
@@ -323,19 +371,19 @@ function RolesTab() {
   )
 }
 
-function OrgTab({ tenantId }: { tenantId: string }) {
+function OrgTab({ partnerId }: { partnerId: string }) {
   const { data: orgs = [] } = useOrgs()
   const createOrg = useCreateOrg()
   const [name, setName] = useState('')
-  const tenantOrgs = orgs.filter((o) => o.tenantId === tenantId)
-  const roots = tenantOrgs.filter((o) => !o.parentId)
+  const partnerOrgs = orgs.filter((o) => o.partnerId === partnerId)
+  const roots = partnerOrgs.filter((o) => !o.parentId)
 
   function children(parentId: string) {
-    return tenantOrgs.filter((o) => o.parentId === parentId)
+    return partnerOrgs.filter((o) => o.parentId === parentId)
   }
 
   function renderOrg(id: string, depth: number) {
-    const org = tenantOrgs.find((o) => o.id === id)
+    const org = partnerOrgs.find((o) => o.id === id)
     if (!org) return null
     return (
       <div key={id}>

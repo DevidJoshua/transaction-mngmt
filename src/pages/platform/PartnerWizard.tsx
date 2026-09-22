@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, Badge, Button, Input } from '../../components/ui'
-import { useCatalog, useCreateTenant, useCreatePackage } from '../../lib/store'
+import { useCatalog, useCreatePartner, useCreatePackage } from '../../lib/store'
 import { PrivilegePicker } from './PrivilegePicker'
 import { cn } from '../../lib/utils'
 
-const STEPS = ['Tenant', 'Package & modules', 'Module versions', 'Initial admin', 'Review']
+const STEPS = ['Partner', 'Package & modules', 'Module versions', 'Initial admin', 'Review']
 
-export function TenantWizard() {
+export function PartnerWizard() {
   const { data } = useCatalog()
   const modules = data?.modules ?? []
   const privileges = data?.privileges ?? []
   const packages = data?.packages ?? []
 
-  const createTenant = useCreateTenant()
+  const createPartner = useCreatePartner()
   const createPackage = useCreatePackage()
 
   const [step, setStep] = useState(0)
@@ -85,7 +85,7 @@ export function TenantWizard() {
       const moduleVersions = targetModuleIds
         .map((mid) => ({ moduleId: mid, versionId: effectiveVersionId(mid) }))
         .filter((x) => x.versionId)
-      const res = await createTenant.mutateAsync({
+      const res = await createPartner.mutateAsync({
         name,
         type,
         packageId,
@@ -139,7 +139,7 @@ export function TenantWizard() {
             {step === 0 && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs text-content-secondary">Tenant name</label>
+                  <label className="mb-1 block text-xs text-content-secondary">Partner name</label>
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bank C" />
                 </div>
                 <div>
@@ -290,7 +290,7 @@ export function TenantWizard() {
 
             {step === 4 && (
               <div className="space-y-3 text-sm">
-                <ReviewRow label="Tenant" value={name} />
+                <ReviewRow label="Partner" value={name} />
                 <ReviewRow label="Type" value={type} />
                 <ReviewRow
                   label="Package"
@@ -325,8 +325,8 @@ export function TenantWizard() {
                   Next <ChevronRight className="size-4" />
                 </Button>
               ) : (
-                <Button disabled={createTenant.isPending} onClick={submit}>
-                  {createTenant.isPending ? 'Creating…' : 'Complete onboarding'}
+                <Button disabled={createPartner.isPending} onClick={submit}>
+                  {createPartner.isPending ? 'Creating…' : 'Complete onboarding'}
                 </Button>
               )}
             </div>

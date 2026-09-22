@@ -203,7 +203,7 @@ bounces unauthenticated users to `/login` and authenticated users to `/dashboard
 
 ---
 
-## 8. Multi-tenant & role model
+## 8. Multi-partner & role model
 
 - **Stores**: merchant entities with detail pages, creation wizard (step defs), and a
   "current store" context (`current-store`, `stores`, `storefront`).

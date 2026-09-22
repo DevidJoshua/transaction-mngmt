@@ -5,7 +5,7 @@ import { useAudit } from '../lib/store'
 const actionVariant: Record<string, 'success' | 'error' | 'brand' | 'neutral'> = {
   LOGIN: 'success',
   LOGIN_FAILED: 'error',
-  TENANT_CREATED: 'brand',
+  PARTNER_CREATED: 'brand',
   PACKAGE_CREATED: 'brand',
   PACKAGE_UPDATED: 'brand',
   USER_CREATED: 'success',

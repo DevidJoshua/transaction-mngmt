@@ -18,7 +18,7 @@ VENDOR controls WHAT exists          CLIENT controls WHO can use it
    ├── Features                         ├── Roles
    ├── Privileges                       ├── Role assignment
    ├── Packages                         ├── User assignment
-   └── Tenant provisioning              └── Organization & data scope
+   └── Partner provisioning              └── Organization & data scope
 ```
 
 Vendor defines the capability catalog. Client assigns those capabilities to its own
@@ -34,27 +34,27 @@ An **account** is a `User` row. Every account has:
 | Field      | Meaning                                                                    |
 |------------|-----------------------------------------------------------------------------|
 | `id`        | Internal identifier                                                         |
-| `tenantId`  | Owning tenant (`null` for vendor/platform operators)                        |
+| `partnerId`  | Owning partner (`null` for vendor/platform operators)                        |
 | `name`      | Display name                                                                |
 | `email`     | Unique login identity                                                       |
 | `password`  | bcrypt hash (`password123` in seed, hashed at rest)                         |
 | `status`    | Lifecycle state (see §3)                                                    |
 | `isVendor`  | `true` for platform operators with global, unmatched access                 |
 
-An account belongs to exactly one tenant (or is vendor). Tenancy is a **security
-boundary**: every database query scopes to the caller's `tenantId` derived from the
+An account belongs to exactly one partner (or is vendor). Partner isolation is a **security
+boundary**: every database query scopes to the caller's `partnerId` derived from the
 authenticated session, never from request body or query params (BRD §30).
 
 ### 2.1 Vendor accounts
 
-Vendor accounts (`isVendor = true`) operate outside tenant boundaries. They administer
-the capability catalog, packages, and tenant provisioning via `/api/catalog`.
+Vendor accounts (`isVendor = true`) operate outside partner boundaries. They administer
+the capability catalog, packages, and partner provisioning via `/api/catalog`.
 
 ### 2.2 Client accounts
 
-Client accounts belong to a tenant and gain access only through roles + scopes assigned
-by that tenant's administrator. The first client administrator is provisioned by the
-vendor during tenant onboarding (BRD §21).
+Client accounts belong to a partner and gain access only through roles + scopes assigned
+by that partner's administrator. The first client administrator is provisioned by the
+vendor during partner onboarding (BRD §21).
 
 ---
 
@@ -86,13 +86,13 @@ Role: Finance Officer
   └── REPORT_VIEW
 ```
 
-- Roles are scoped to a single tenant.
+- Roles are scoped to a single partner.
 - Role lifecycle: `DRAFT → ACTIVE → INACTIVE`. Inactive roles are not resolved at runtime.
-- Roles differ freely between tenants (BRD §12); the platform never assumes a global set.
+- Roles differ freely between partners (BRD §12); the platform never assumes a global set.
 
 A role may only contain privileges that are:
 1. defined by the vendor (exist in the privilege catalog), **and**
-2. available in the tenant's package entitlement.
+2. available in the partner's package entitlement.
 
 The role editor UI enforces both; the backend re-checks at authorization time.
 
@@ -109,10 +109,10 @@ PACKAGE ──► MODULE ──► FEATURE ──► PRIVILEGE
 - **Module** — top-level functional domain (Dashboard, Transactions, Settlement, …).
 - **Feature** — capability inside a module (Transaction List, Refund, Void, …).
 - **Privilege** — the finest authorization unit (`TRANSACTION_REFUND`, …).
-- **Package** — an entitlement bundle granted to a tenant (Merchant Standard,
+- **Package** — an entitlement bundle granted to a partner (Merchant Standard,
   Merchant Enterprise, Bank Enterprise, …).
 
-A package lists which modules and privileges **may be available** to the tenant. It does
+A package lists which modules and privileges **may be available** to the partner. It does
 not grant anything to any user by itself — it only *enables* what roles can then use
 (BRD §8.3).
 
@@ -146,7 +146,7 @@ A user's effective access is the intersection of all constraints (BRD §17):
 
 ```text
 Effective Access =
-      Tenant Membership
+      Partner Membership
    ∩  Package Entitlement
    ∩  Role Privilege
    ∩  Data Scope
@@ -186,7 +186,7 @@ Request
    │  Authentication (JWT)
    ▼  Identify user
    │  Check status = active
-   ▼  Resolve tenant (from session, not body)
+   ▼  Resolve partner (from session, not body)
    │  Check package entitlement
    ▼  Resolve role → privilege
    │  Evaluate data scope
@@ -223,17 +223,17 @@ User A (Finance) scope: Jakarta Branch
 ```
 
 Scope is modeled as user→organization assignments (`AccessScope`), resolved at runtime
-as the user's `orgIds`. Organization structures are tenant-specific trees
+as the user's `orgIds`. Organization structures are partner-specific trees
 (Head Office → Branches).
 
 ---
 
-## 10. Tenancy isolation
+## 10. Partner isolation isolation
 
-- Tenant context originates exclusively from the authenticated session/JWT.
-- Database queries always apply `tenant_id = currentTenant`.
-- Cross-tenant access is impossible unless the platform explicitly provides a
-  sanctioned cross-tenant mechanism.
+- Partner context originates exclusively from the authenticated session/JWT.
+- Database queries always apply `partner_id = currentPartner`.
+- Cross-partner access is impossible unless the platform explicitly provides a
+  sanctioned cross-partner mechanism.
 
 ---
 
@@ -263,7 +263,7 @@ owner@merchant.com    Merchant A — Owner
 CAN USER PERFORM ACTION?
    ├── Is the user authenticated?          (JWT valid)
    ├── Is the user active?                 (status = active)
-   ├── Does the user belong to a tenant?   (scope + isolation)
+   ├── Does the user belong to a partner?   (scope + isolation)
    ├── Does the package include it?        (entitlement)
    ├── Does a role contain the privilege?  (RBAC)
    └── Is the data within user scope?      (AccessScope)

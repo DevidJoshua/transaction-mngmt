@@ -25,7 +25,9 @@ function RequireVendor({ children }: { children: React.ReactNode }) {
 function IndexRedirect() {
   const ctx = useAbility()
   if (!ctx) return null
-  return <Navigate to={ctx.isVendor ? '/platform' : '/dashboard'} replace />
+  if (ctx.isVendor) return <Navigate to="/platform" replace />
+  const first = ctx.catalog.modules.find((m) => ctx.modules.includes(m.id))
+  return <Navigate to={first?.route ?? '/dashboard'} replace />
 }
 
 export default function App() {

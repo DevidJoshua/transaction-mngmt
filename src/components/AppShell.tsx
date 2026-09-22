@@ -69,7 +69,7 @@ export function AppShell() {
             <Building2 className="size-4 text-content-secondary" />
             <div className="min-w-0">
               <p className="truncate text-xs font-medium">
-                {ctx.isVendor ? 'Platform Operator' : ctx.tenant?.name}
+                {ctx.isVendor ? 'Platform Operator' : ctx.partner?.name}
               </p>
               <p className="truncate text-[11px] text-content-secondary">
                 {ctx.isVendor ? 'Vendor' : ctx.pkg?.name}

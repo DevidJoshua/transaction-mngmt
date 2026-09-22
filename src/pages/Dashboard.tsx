@@ -25,7 +25,7 @@ export function Dashboard() {
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border-base bg-slate-50 px-3 py-2 text-xs text-content-secondary">
-        <span className="font-medium text-foreground">{ctx?.tenant?.name ?? 'Tenant'}</span>
+        <span className="font-medium text-foreground">{ctx?.partner?.name ?? 'Partner'}</span>
         <span>·</span>
         <span>{ctx?.pkg?.name}</span>
         <span>·</span>

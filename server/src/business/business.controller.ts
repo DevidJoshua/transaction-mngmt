@@ -8,6 +8,7 @@ import { BusinessService } from './business.service'
 class CreateMerchantDto {
   @IsString() name!: string
   @IsOptional() @IsString() category?: string
+  @IsOptional() @IsString() orgId?: string
 }
 
 @Controller()

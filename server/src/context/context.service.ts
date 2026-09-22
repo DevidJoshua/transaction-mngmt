@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service'
 export interface SessionContext {
   user: {
     id: string
-    tenantId: string | null
+    partnerId: string | null
     name: string
     email: string
     roleIds: string[]
@@ -13,9 +13,9 @@ export interface SessionContext {
     isVendor: boolean
   }
   isVendor: boolean
-  tenant: { id: string; name: string; type: string; packageId: string } | null
+  partner: { id: string; name: string; type: string; packageId: string } | null
   pkg: { id: string; name: string; tier: string; entitlements: { modules: string[]; privileges: string[] } } | null
-  roles: { id: string; tenantId: string; name: string; privileges: string[]; status: string }[]
+  roles: { id: string; partnerId: string; name: string; privileges: string[]; status: string }[]
   privileges: string[]
   modules: string[]
   orgIds: string[]
@@ -35,7 +35,7 @@ export class ContextService {
       include: {
         userRoles: { include: { role: { include: { rolePrivileges: { include: { privilege: true } } } } } },
         userScopes: { include: { org: true } },
-        tenant: {
+        partner: {
           include: {
             package: { include: { entitlements: { include: { module: true, privilege: true } } } },
           },
@@ -50,9 +50,9 @@ export class ContextService {
 
     if (user.isVendor) {
       return {
-        user: { id: user.id, tenantId: null, name: user.name, email: user.email, roleIds: [], orgIds: [], status: user.status, isVendor: true },
+        user: { id: user.id, partnerId: null, name: user.name, email: user.email, roleIds: [], orgIds: [], status: user.status, isVendor: true },
         isVendor: true,
-        tenant: null,
+        partner: null,
         pkg: null,
         roles: [],
         privileges: [],
@@ -62,15 +62,15 @@ export class ContextService {
       }
     }
 
-    const tenant = user.tenant
-    const pkg = tenant?.package ?? null
+    const partner = user.partner
+    const pkg = partner?.package ?? null
 
     const roles = user.userRoles
       .map((ur) => ur.role)
       .filter((r) => r.status === 'active')
       .map((r) => ({
         id: r.id,
-        tenantId: r.tenantId,
+        partnerId: r.partnerId,
         name: r.name,
         status: r.status,
         privileges: r.rolePrivileges.map((rp) => rp.privilege.id),
@@ -104,7 +104,7 @@ export class ContextService {
     return {
       user: {
         id: user.id,
-        tenantId: user.tenantId,
+        partnerId: user.partnerId,
         name: user.name,
         email: user.email,
         roleIds: user.userRoles.map((ur) => ur.roleId),
@@ -113,7 +113,7 @@ export class ContextService {
         isVendor: false,
       },
       isVendor: false,
-      tenant: tenant ? { id: tenant.id, name: tenant.name, type: tenant.type, packageId: tenant.packageId } : null,
+      partner: partner ? { id: partner.id, name: partner.name, type: partner.type, packageId: partner.packageId } : null,
       pkg: pkg
         ? {
             id: pkg.id,
