@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Vendor catalog (vendor-controlled WHAT)
+// ---------------------------------------------------------------------------
+
+model Module {
+  id                  String             @id
+  label               String
+  route               String
+  icon                String
+  features            Feature[]
+  privileges          Privilege[]
+  packageEntitlements PackageEntitlement[]
+  versions            ModuleVersion[]
+  tenantVersions      TenantModuleVersion[]
+  packageVersions     PackageModuleVersion[]
+}
+
+model ModuleVersion {
+  id        String   @id
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  version   String
+  releasedAt DateTime @default(now())
+  tenantVersions TenantModuleVersion[]
+  packageVersions PackageModuleVersion[]
+
+  @@unique([moduleId, version])
+}
+
+model Feature {
+  id         String      @id
+  moduleId   String
+  module     Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  label      String
+  privileges Privilege[]
+}
+
+model Privilege {
+  id                  String   @id
+  moduleId            String
+  module              Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  featureId           String?
+  feature             Feature? @relation(fields: [featureId], references: [id], onDelete: SetNull)
+  label               String
+  rolePrivileges      RolePrivilege[]
+  packageEntitlements PackageEntitlement[]
+}
+
+model Package {
+  id            String                @id
+  name          String
+  tier          String
+  status        String                @default("active")
+  entitlements  PackageEntitlement[]
+  moduleVersions PackageModuleVersion[]
+  tenants       Tenant[]
+}
+
+model PackageModuleVersion {
+  id        String        @id @default(cuid())
+  packageId String
+  package   Package       @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  versionId String
+  version   ModuleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, moduleId])
+}
+
+model PackageEntitlement {
+  id          String     @id @default(cuid())
+  packageId   String
+  package     Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      Module?    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  privilegeId String?
+  privilege   Privilege? @relation(fields: [privilegeId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, moduleId])
+  @@unique([packageId, privilegeId])
+}
+
+// ---------------------------------------------------------------------------
+// Tenant domain (client-controlled WHO)
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String         @id
+  name      String
+  type      String
+  status    String         @default("active")
+  packageId String
+  package   Package        @relation(fields: [packageId], references: [id])
+  users       User[]
+  roles       Role[]
+  orgs        Organization[]
+  merchants   Merchant[]
+  settlements Settlement[]
+  moduleVersions TenantModuleVersion[]
+}
+
+model Organization {
+  id         String         @id
+  tenantId   String
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  parentId   String?
+  parent     Organization?  @relation("OrgTree", fields: [parentId], references: [id])
+  children   Organization[] @relation("OrgTree")
+  userScopes AccessScope[]
+}
+
+model User {
+  id         String        @id
+  tenantId   String?
+  tenant     Tenant?       @relation(fields: [tenantId], references: [id])
+  name       String
+  email      String        @unique
+  password   String
+  status     String        @default("active")
+  isVendor   Boolean       @default(false)
+  userRoles  UserRole[]
+  userScopes AccessScope[]
+}
+
+model Role {
+  id              String          @id
+  tenantId        String
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  status          String          @default("active")
+  rolePrivileges  RolePrivilege[]
+  userRoles       UserRole[]
+}
+
+model RolePrivilege {
+  roleId      String
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  privilegeId String
+  privilege   Privilege @relation(fields: [privilegeId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, privilegeId])
+}
+
+model UserRole {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model AccessScope {
+  id     String       @id @default(cuid())
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+}
+
+// ---------------------------------------------------------------------------
+// Business data (tenant-scoped payments domain)
+// ---------------------------------------------------------------------------
+
+model Merchant {
+  id        String   @id
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  category  String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model Settlement {
+  id        String   @id
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  merchant  String
+  amount    Int
+  status    String
+  period    String
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Audit trail
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  tenantId  String?
+  actor     String
+  action    String
+  target    String?
+  detail    String?
+  ip        String?
+  createdAt DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Module versioning (per-tenant module version assignment)
+// ---------------------------------------------------------------------------
+
+model TenantModuleVersion {
+  id        String        @id @default(cuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  versionId String
+  version   ModuleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, moduleId])
+}

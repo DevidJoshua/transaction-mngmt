@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: plink5-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: plink
+      POSTGRES_PASSWORD: plink
+      POSTGRES_DB: plink5
+    ports:
+      - "5434:5432"
+    volumes:
+      - plink5_pgdata:/var/lib/postgresql/data
+
+volumes:
+  plink5_pgdata:
